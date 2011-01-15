@@ -132,7 +132,7 @@ void dda_create(DDA *dda, TARGET *target) {
 	dda->z_direction = (target->Z >= startpoint.Z)?1:0;
 
 	if (debug_flags & DEBUG_DDA)
-		sersendf_P(PSTR("%ld,%ld,%ld,%ld] ["), target->X - startpoint.X, target->Y - startpoint.Y, target->Z - startpoint.Z, target->E - startpoint.E);
+		sersendf_P(PSTR("%ld,%ld,%ld] ["), target->X - startpoint.X, target->Y - startpoint.Y, target->Z - startpoint.Z);
 
 	dda->total_steps = dda->x_delta;
 	if (dda->y_delta > dda->total_steps)

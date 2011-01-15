@@ -40,10 +40,6 @@
 	#define	Z_INVERT_ENABLE 0
 #endif
 
-#ifndef	E_INVERT_DIR
-	#define	E_INVERT_DIR 0
-#endif
-
 #ifndef	STEPPER_ENABLE_INVERT
 	#define	STEPPER_ENABLE_INVERT 0
 #endif
@@ -109,11 +105,7 @@ End Step - All Steppers
 (so we don't have to delay in interrupt context)
 */
 
-#ifndef	DC_EXTRUDER
-	#define unstep() 							do { _x_step(0); _y_step(0); _z_step(0); _e_step(0); } while (0)
-#else
 	#define unstep() 							do { _x_step(0); _y_step(0); _z_step(0); } while (0)
-#endif
 
 /*
 Stepper Enable Pins

@@ -13,6 +13,7 @@
 #include	"pinio.h"
 #include	"debug.h"
 #include	"clock.h"
+#include  "watchdog.h"
 
 // the current tool
 uint8_t tool;

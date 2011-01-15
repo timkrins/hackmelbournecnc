@@ -16,6 +16,7 @@
 #include	"pinio.h"
 #include	"arduino.h"
 #include	"clock.h"
+#include  "watchdog.h"
 
 void io_init(void) {
 	// disable modules we don't use
@@ -60,9 +61,6 @@ void io_init(void) {
 	#ifdef Z_ENABLE_PIN
 		WRITE(Z_ENABLE_PIN, 1); SET_OUTPUT(Z_ENABLE_PIN);
 	#endif
-	
-	WRITE(E_STEP_PIN, 0);	SET_OUTPUT(E_STEP_PIN);
-	WRITE(E_DIR_PIN,  0);	SET_OUTPUT(E_DIR_PIN);
 
 	// setup PWM timers: fast PWM, no prescaler
 	TCCR0A = MASK(WGM01) | MASK(WGM00);

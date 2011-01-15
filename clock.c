@@ -5,6 +5,7 @@
 #include	"dda_queue.h"
 #include	"timer.h"
 #include	"debug.h"
+#include  "watchdog.h"
 
 void clock_250ms() {
 	if (steptimeout > (30 * 4)) {

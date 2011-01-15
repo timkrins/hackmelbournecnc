@@ -30,12 +30,8 @@ uint8_t queue_empty() {
 void queue_step() {
 	// do our next step
 	if (movebuffer[mb_tail].live) {
-		if (movebuffer[mb_tail].waitfor_temp) {
 			setTimer(movebuffer[mb_tail].c >> 8);
-			if (temp_achieved()) {
-				movebuffer[mb_tail].live = movebuffer[mb_tail].waitfor_temp = 0;
-				serial_writestr_P(PSTR("Temp achieved\n"));
-			}
+			movebuffer[mb_tail].live = 0;
 
 			#if STEP_INTERRUPT_INTERRUPTIBLE
 				sei();
@@ -45,7 +41,7 @@ void queue_step() {
 			// NOTE: dda_step makes this interrupt interruptible after steps have been sent but before new speed is calculated.
 			dda_step(&(movebuffer[mb_tail]));
 		}
-	}
+	
 
 	// fall directly into dda_start instead of waiting for another step
 	// the dda dies not directly after its last step, but when the timer fires and there's no steps to do

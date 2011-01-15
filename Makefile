@@ -87,7 +87,7 @@ PROGBAUD = 57600
 
 PROGRAM = mendel
 
-SOURCES = $(PROGRAM).c serial.c dda.c gcode_parse.c gcode_process.c timer.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c heater.c analog.c delay.c intercom.c pinio.c clock.c
+SOURCES = $(PROGRAM).c serial.c dda.c gcode_parse.c gcode_process.c timer.c sermsg.c dda_queue.c debug.c sersendf.c delay.c pinio.c clock.c watchdog.c
 
 ARCH = avr-
 CC = $(ARCH)gcc
@@ -104,7 +104,7 @@ OBJ = $(patsubst %.c,%.o,${SOURCES})
 .PHONY: all program clean size
 .PRECIOUS: %.o %.elf
 
-all: config.h $(PROGRAM).hex $(PROGRAM).lst $(PROGRAM).sym size
+all: config.h $(PROGRAM).hex $(PROGRAM).lst
 
 program: $(PROGRAM).hex config.h
 	stty $(PROGBAUD) raw ignbrk hup < $(PROGPORT)

@@ -1,35 +1,33 @@
-A modified rewrite of the Reprap Mendel firmware for use with CNC machines.
-
-This code has merely been modified - all the work has been done by the legendary Triffid_Hunter, Traumflug and jakepoz ;)
-
-Eventually, if there is a need, some sort of a 'suite' could be put together, to allow the individual to select the components that they have, ie.
-X axis, Y axis, Z axis, extruder, heater, fan, thermistor, spindle, end stops, lcd displays
-and have the code build for their platform without all the unnessecary routines (if you have no extruder, you do not need PID).
-
-For now, I am concentrating on getting the basic CNC thing down :)
-
-/############################################################################\
-# Capabilities                                                               #
-\############################################################################/
+Rewrite of Reprap Mendel firmware:
 
 * 100% integer computations
 * serial transmit buffer
+* can fit onto atmega168 depending on selected options
+* works on atmega328p
 * works on atmega644p
+* porting to atmega1280 in progress
 * will work on larger atmegas with minor porting
 
-/############################################################################\
+##############################################################################
+#                                                                            #
 # How to use                                                                 #
-\############################################################################/
+#                                                                            #
+##############################################################################
 
-) check programming settings in Makefile
-) make
-) make program
-a) if programming blank chip, make program-fuses
-) have a play
+1) COPY config.h.dist to config.h and edit to suit your electronics
+2) check programming settings in Makefile
+3) make
+4) make program
+4a) if programming blank chip, make program-fuses
+5) ./sender.sh
+6) have a play, go to 1) if not right
+7) try printing something!
 
-/############################################################################\
+##############################################################################
+#                                                                            #
 # Requirements                                                               #
-\############################################################################/
+#                                                                            #
+##############################################################################
 
 Compile:
 	gnu make
@@ -39,9 +37,11 @@ Program:
 	avrdude
 	something that avrdude supports: bootloader, separate programmer, whatever
 
-/############################################################################\
+##############################################################################
+#                                                                            #
 # License                                                                    #
-\############################################################################/
+#                                                                            #
+##############################################################################
 
 This firmware is Copyright (C) 2009-2010 Michael Moon aka Triffid_Hunter
 
@@ -59,9 +59,11 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-/############################################################################\
+##############################################################################
+#                                                                            #
 # Rationale and History                                                      #
-\############################################################################/
+#                                                                            #
+##############################################################################
 
 I started building my electronics with only a regular arduino to test with.
 This was perfectly sufficient for playing with the pololu stepper controllers and the max6675 I bought after reading about all the issues with thermistors that people were having. After a while I decided to check out the official firmware but it required an atmega644. I wondered why.
@@ -82,9 +84,11 @@ Cefiar posted me some thermistors to sponsor addition of thermistor-reading code
 Many others have given encouragement and suggestions without which this firmware may never be what it is today.
 
 
-/############################################################################\
+##############################################################################
+#                                                                            #
 # Architectural Overview                                                     #
-\############################################################################/
+#                                                                            #
+##############################################################################
 
 FiveD on Arduino is quite similar to the official firmware in some ways, and markedly different in others. FiveD on Arduino has as much modularity as I could get away with without sacrificing efficiency.
 
@@ -94,9 +98,11 @@ At startup, the code in mendel.c is run first. This initialises all the modules 
 It is necessary to keep interrupts very short on small microcontrollers, and I have endeavoured to keep them all as short as possible. Unfortunately, dda_step[dda.c] is fairly large. I simply hope that it doesn't take so much time that it interferes with the other interrupts too much.
 
 
-/############################################################################\
+##############################################################################
+#                                                                            #
 # Interesting code sections                                                  #
-\############################################################################/
+#                                                                            #
+##############################################################################
 
 The serial ringbuffers are critical for good communication, but for some reason the official arduino libraries don't implement a tx queue, all but preventing sending stuff from interrupt context. As long as the queues have a length of 2^n, we can use bitwise operations rather than numerical comparison to trim the read and write pointers. The serial send function (serial_writechar[serial.c]) is necessarily careful about checking if it's in an interrupt and only waiting for space in the queue if it's not.
 The dda queue is also a ringbuffer, although its implementation is harder to see as it's embedded in lots of other stuff.
@@ -107,17 +113,24 @@ The fixed-point stuff is fun, although we have to manually ensure that the decim
 
 The PID code in heater.c is probably quite generalisable, and seems to work well when tuned. Google knows of plenty of PID tuning guides.
 
-/############################################################################\
+##############################################################################
+#                                                                            #
 # Resources                                                                  #
-\############################################################################/
+#                                                                            #
+##############################################################################
 
 Forum thread: http://forums.reprap.org/read.php?147,33082
 Source Repository: http://github.com/triffid/FiveD_on_Arduino
 Wiki Page: http://objects.reprap.org/wiki/FiveD_on_Arduino
 
-/############################################################################\
+##############################################################################
+#                                                                            #
 # File descriptions                                                          #
-\############################################################################/
+#                                                                            #
+##############################################################################
+
+*** analog.[ch]
+This is the analog subsystem. Only used if you have a thermistor or ad595
 
 *** arduino.h, arduino_[chip].h
 Pin mappings and helper functions for various atmegas
@@ -127,6 +140,9 @@ Regular functions that run in main loop rather than an interrupt
 
 *** config.h.dist, config.h
 Configuration for your electronics and hardware. Copy config.h.dist to config.h, edit config.h to suit
+
+*** copier.[ch]
+A totally untested and currently unused chunk of code for copying firmware to another identical chip
 
 *** dda.[ch]
 A rather complex block of math that figures out when to step each axis according to speed and acceleration profiles and received moves
@@ -140,11 +156,23 @@ Debugging aids
 *** delay.[ch]
 Delay functions
 
+*** FiveD_on_Arduino.pde
+Allows firmware to be built in arduino ide
+
+*** func.sh
+Lots of host-side shell scripts for talking to firmware
+
 *** gcode_parse.[ch]
 Gcode parser. Scaling of factors to internally used integer or fixed point happens here too.
 
 *** gcode_process.[ch]
 Gcodes actually get executed here after being parsed.
+
+*** heater.[ch]
+Heater management, including PID and PWM algorithms, and some configuration parameters
+
+*** intercom.[ch]
+Gen3 serial link control and communication
 
 *** LICENSE
 Gnu GPL2 license
@@ -173,5 +201,12 @@ Functions for sending messages and values to host
 *** sersendf.[ch]
 A small, crude printf implementation
 
+*** temp.[ch]
+Temperature sensor management, includes some configuration parameters
+
 *** timer.[ch]
 Timer management, used primarily by dda.c for timing steps
+
+*** watchdog.[ch]
+Watchdog management. resets chip if firmware locks up or does something strange
+
