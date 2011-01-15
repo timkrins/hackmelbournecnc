@@ -105,14 +105,6 @@ Z Stepper
 #endif
 
 /*
-Extruder
-*/
-
-#define	_e_step(st)						WRITE(E_STEP_PIN, st)
-#define	e_step()							_e_step(1);
-#define	e_direction(dir)			WRITE(E_DIR_PIN, dir ^ E_INVERT_DIR)
-
-/*
 End Step - All Steppers
 (so we don't have to delay in interrupt context)
 */

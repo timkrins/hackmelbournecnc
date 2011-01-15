@@ -24,7 +24,6 @@ typedef struct {
 	int32_t						X;
 	int32_t						Y;
 	int32_t						Z;
-	int32_t						E;
 	uint32_t					F;
 } TARGET;
 
@@ -49,7 +48,6 @@ typedef struct {
 			uint8_t						x_direction		:1;
 			uint8_t						y_direction		:1;
 			uint8_t						z_direction		:1;
-			uint8_t						e_direction		:1;
 		};
 		uint8_t							allflags;	// used for clearing all flags
 	};
@@ -58,15 +56,13 @@ typedef struct {
 	uint32_t					x_delta;
 	uint32_t					y_delta;
 	uint32_t					z_delta;
-	uint32_t					e_delta;
 
 	// bresenham counters
 	int32_t						x_counter;
 	int32_t						y_counter;
 	int32_t						z_counter;
-	int32_t						e_counter;
 
-	// total number of steps: set to max(x_delta, y_delta, z_delta, e_delta)
+	// total number of steps: set to max(x_delta, y_delta, z_delta)
 	uint32_t					total_steps;
 
 	// linear acceleration variables: c and end_c are 24.8 fixed point timer values, n is the tracking variable
@@ -90,7 +86,6 @@ typedef struct {
 	uint32_t					x_step_interval;
 	uint32_t					y_step_interval;
 	uint32_t					z_step_interval;
-	uint32_t					e_step_interval;
 	#endif
 } DDA;
 

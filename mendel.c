@@ -10,13 +10,9 @@
 #include	"dda.h"
 #include	"gcode_parse.h"
 #include	"timer.h"
-#include	"temp.h"
 #include	"sermsg.h"
-#include	"watchdog.h"
 #include	"debug.h"
 #include	"sersendf.h"
-#include	"heater.h"
-#include	"analog.h"
 #include	"pinio.h"
 #include	"arduino.h"
 #include	"clock.h"
@@ -129,17 +125,8 @@ void init(void) {
 	// set up timers
 	timer_init();
 
-	// read PID settings from EEPROM
-	heater_init();
-
 	// set up default feedrate
 	current_position.F = startpoint.F = next_target.target.F = SEARCH_FEEDRATE_Z;
-
-	// start up analog read interrupt loop, if anything uses analog as determined by ANALOG_MASK in your config.h
-	analog_init();
-
-	// set up temperature inputs
-	temp_init();
 
 	// enable interrupts
 	sei();

@@ -5,12 +5,9 @@
 #include	"gcode_parse.h"
 
 #include	"dda_queue.h"
-#include	"watchdog.h"
 #include	"delay.h"
 #include	"serial.h"
 #include	"sermsg.h"
-#include	"temp.h"
-#include	"heater.h"
 #include	"timer.h"
 #include	"sersendf.h"
 #include	"pinio.h"
@@ -48,19 +45,6 @@ void zero_z(void) {
 	enqueue(&t);
 }
 
-void zero_e(void) {
-	TARGET t = startpoint;
-	t.E = 0;
-	enqueue(&t);
-}
-
-void SpecialMoveE(int32_t e, uint32_t f) {
-	TARGET t = startpoint;
-	t.E = e;
-	t.F = f;
-	enqueue(&t);
-}
-
 /****************************************************************************
 *                                                                           *
 * Command Received - process it                                             *
@@ -76,11 +60,6 @@ void process_gcode_command() {
 		next_target.target.Y += startpoint.Y;
 		next_target.target.Z += startpoint.Z;
 	}
-	// E ALWAYS relative, otherwise we overflow our registers after only a few layers
-	// 	next_target.target.E += startpoint.E;
-	// easier way to do this
-	// 	startpoint.E = 0;
-	// moved to dda.c, end of dda_create() and dda_queue.c, next_move()
 
 	if (next_target.seen_T) {
 		next_tool = next_target.T;
@@ -153,10 +132,6 @@ void process_gcode_command() {
 					zero_z();
 					axisSelected = 1;
 				}
-				if (next_target.seen_E) {
-					zero_e();
-					axisSelected = 1;
-				}
 				
 				break;
 				
@@ -187,15 +162,10 @@ void process_gcode_command() {
 						startpoint.Z = current_position.Z = next_target.target.Z;
 						axisSelected = 1;
 					}
-					if (next_target.seen_E) {
-						startpoint.E = current_position.E = next_target.target.E;
-						axisSelected = 1;
-					}
 					if (axisSelected == 0) {
 						startpoint.X = current_position.X =
 						startpoint.Y = current_position.Y =
-						startpoint.Z = current_position.Z =
-						startpoint.E = current_position.E = 0;
+						startpoint.Z = current_position.Z = 0;
 					}
 					break;
 					
@@ -223,84 +193,6 @@ void process_gcode_command() {
 			case 6:
 				tool = next_tool;
 				break;
-			// M3/M101- extruder on
-			case 3:
-			case 101:
-				if (temp_achieved() == 0) {
-					enqueue(NULL);
-				}
-				#ifdef DC_EXTRUDER
-					heater_set(DC_EXTRUDER, DC_EXTRUDER_PWM);
-				#elif E_STARTSTOP_STEPS > 0
-					do {
-						// backup feedrate, move E very quickly then restore feedrate
-						backup_f = startpoint.F;
-						startpoint.F = MAXIMUM_FEEDRATE_E;
-						SpecialMoveE(E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
-						startpoint.F = backup_f;
-					} while (0);
-				#endif
-				break;
-				
-				// M102- extruder reverse
-				
-				// M5/M103- extruder off
-			case 5:
-			case 103:
-				#ifdef DC_EXTRUDER
-					heater_set(DC_EXTRUDER, 0);
-				#elif E_STARTSTOP_STEPS > 0
-					do {
-						// backup feedrate, move E very quickly then restore feedrate
-						backup_f = startpoint.F;
-						startpoint.F = MAXIMUM_FEEDRATE_E;
-						SpecialMoveE(-E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
-						startpoint.F = backup_f;
-					} while (0);
-				#endif
-				break;
-				
-				// M104- set temperature
-			case 104:
-				temp_set(next_target.P, next_target.S);
-				if (next_target.S) {
-					power_on();
-				}
-				else {
-					disable_heater();
-				}
-				break;
-				
-				// M105- get temperature
-			case 105:
-				temp_print(next_target.P);
-				break;
-				
-				// M7/M106- fan on
-			#if NUM_HEATERS > 1
-			case 7:
-			case 106:
-				heater_set(1, 255);
-				break;
-				// M107- fan off
-			case 9:
-			case 107:
-				heater_set(1, 0);
-				break;
-			#endif
-				
-				// M109- set temp and wait
-			case 109:
-				temp_set(next_target.P, next_target.S);
-				if (next_target.S) {
-					power_on();
-					enable_heater();
-				}
-				else {
-					disable_heater();
-				}
-				enqueue(NULL);
-				break;
 				
 				// M110- set line number
 			case 110:
@@ -321,46 +213,14 @@ void process_gcode_command() {
 				// M113- extruder PWM
 				// M114- report XYZEF to host
 			case 114:
-				sersendf_P(PSTR("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld"), current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F);
+				sersendf_P(PSTR("X:%ld,Y:%ld,Z:%ld,F:%ld"), current_position.X, current_position.Y, current_position.Z, current_position.F);
 				// newline is sent from gcode_parse after we return
 				break;
 				// M115- capabilities string
 			case 115:
-				sersendf_P(PSTR("FIRMWARE_NAME:FiveD_on_Arduino FIRMWARE_URL:http%%3A//github.com/triffid/FiveD_on_Arduino/ PROTOCOL_VERSION:1.0 MACHINE_TYPE:Mendel EXTRUDER_COUNT:%d TEMP_SENSOR_COUNT:%d HEATER_COUNT:%d"), 1, NUM_TEMP_SENSORS, NUM_HEATERS);
+				sersendf_P(PSTR("FIRMWARE_NAME:FiveD_on_Arduino FIRMWARE_URL:http%%3A//github.com/triffid/FiveD_on_Arduino/ PROTOCOL_VERSION:1.0 MACHINE_TYPE:Mendel EXTRUDER_COUNT:%d TEMP_SENSOR_COUNT:%d HEATER_COUNT:%d"), 1, 0, 0);
 				// newline is sent from gcode_parse after we return
 				break;
-
-			#if	NUM_HEATERS > 0
-				// M130- heater P factor
-			case 130:
-				if (next_target.seen_S)
-					pid_set_p(next_target.P, next_target.S);
-				break;
-				// M131- heater I factor
-			case 131:
-				if (next_target.seen_S)
-					pid_set_i(next_target.P, next_target.S);
-				break;
-				// M132- heater D factor
-			case 132:
-				if (next_target.seen_S)
-					pid_set_d(next_target.P, next_target.S);
-				break;
-				// M133- heater I limit
-			case 133:
-				if (next_target.seen_S)
-					pid_set_i_limit(next_target.P, next_target.S);
-				break;
-				// M134- save PID settings to eeprom
-			case 134:
-				heater_save_settings();
-				break;
-				// M135- set heater output
-			case 135:
-				if (next_target.seen_S)
-					heater_set(next_target.P, next_target.S);
-				break;
-			#endif	/* NUM_HEATERS > 0 */
 				
 				// M190- power on
 			case 190:
@@ -394,7 +254,7 @@ void process_gcode_command() {
 				
 				// DEBUG: return current position, end position, queue
 			case 250:
-				sersendf_P(PSTR("{X:%ld,Y:%ld,Z:%ld,E:%ld,F:%lu,c:%lu}\t{X:%ld,Y:%ld,Z:%ld,E:%ld,F:%lu,c:%lu}\t"), current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F, movebuffer[mb_tail].c, movebuffer[mb_tail].endpoint.X, movebuffer[mb_tail].endpoint.Y, movebuffer[mb_tail].endpoint.Z, movebuffer[mb_tail].endpoint.E, movebuffer[mb_tail].endpoint.F,
+				sersendf_P(PSTR("{X:%ld,Y:%ld,Z:%ld,F:%lu,c:%lu}\t{X:%ld,Y:%ld,Z:%ld,F:%lu,c:%lu}\t"), current_position.X, current_position.Y, current_position.Z, current_position.F, movebuffer[mb_tail].c, movebuffer[mb_tail].endpoint.X, movebuffer[mb_tail].endpoint.Y, movebuffer[mb_tail].endpoint.Z, movebuffer[mb_tail].endpoint.F,
 					#ifdef ACCELERATION_REPRAP
 						movebuffer[mb_tail].end_c
 					#else

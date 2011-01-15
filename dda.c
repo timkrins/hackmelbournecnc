@@ -13,17 +13,12 @@
 #include	"pinio.h"
 #include	"config.h"
 
-#ifdef	DC_EXTRUDER
-	#include	"heater.h"
-#endif
-
 /*
 	Used in distance calculation during DDA setup
 */
 #define	UM_PER_STEP_X		1000L / ((uint32_t) STEPS_PER_MM_X)
 #define	UM_PER_STEP_Y		1000L / ((uint32_t) STEPS_PER_MM_Y)
 #define	UM_PER_STEP_Z		1000L / ((uint32_t) STEPS_PER_MM_Z)
-#define	UM_PER_STEP_E		1000L / ((uint32_t) STEPS_PER_MM_E)
 
 /*
 	step timeout
@@ -131,12 +126,10 @@ void dda_create(DDA *dda, TARGET *target) {
 	dda->x_delta = labs(target->X - startpoint.X);
 	dda->y_delta = labs(target->Y - startpoint.Y);
 	dda->z_delta = labs(target->Z - startpoint.Z);
-	dda->e_delta = labs(target->E - startpoint.E);
 
 	dda->x_direction = (target->X >= startpoint.X)?1:0;
 	dda->y_direction = (target->Y >= startpoint.Y)?1:0;
 	dda->z_direction = (target->Z >= startpoint.Z)?1:0;
-	dda->e_direction = (target->E >= startpoint.E)?1:0;
 
 	if (debug_flags & DEBUG_DDA)
 		sersendf_P(PSTR("%ld,%ld,%ld,%ld] ["), target->X - startpoint.X, target->Y - startpoint.Y, target->Z - startpoint.Z, target->E - startpoint.E);
@@ -146,8 +139,6 @@ void dda_create(DDA *dda, TARGET *target) {
 		dda->total_steps = dda->y_delta;
 	if (dda->z_delta > dda->total_steps)
 		dda->total_steps = dda->z_delta;
-	if (dda->e_delta > dda->total_steps)
-		dda->total_steps = dda->e_delta;
 
 	if (debug_flags & DEBUG_DDA)
 		sersendf_P(PSTR("ts:%lu"), dda->total_steps);
@@ -172,9 +163,6 @@ void dda_create(DDA *dda, TARGET *target) {
 		else
 			distance = approx_distance_3(dda->x_delta * UM_PER_STEP_X, dda->y_delta * UM_PER_STEP_Y, dda->z_delta * UM_PER_STEP_Z);
 		
-		if (distance < 2)
-			distance = dda->e_delta * UM_PER_STEP_E;
-		
 		if (debug_flags & DEBUG_DDA)
 			sersendf_P(PSTR(",ds:%lu"), distance);
 		
@@ -182,7 +170,7 @@ void dda_create(DDA *dda, TARGET *target) {
 			// bracket part of this equation in an attempt to avoid overflow: 60 * 16MHz * 5mm is >32 bits
 			uint32_t move_duration = distance * (60 * F_CPU / startpoint.F);
 		#else
-			dda->x_counter = dda->y_counter = dda->z_counter = dda->e_counter =
+			dda->x_counter = dda->y_counter = dda->z_counter =
 				-(dda->total_steps >> 1);
 
 			// pre-calculate move speed in millimeter microseconds per step minute for less math in interrupt context
@@ -216,10 +204,6 @@ void dda_create(DDA *dda, TARGET *target) {
 			c_limit = c_limit_calc;
 		// check Z axis
 		c_limit_calc = ( (dda->z_delta * (UM_PER_STEP_Z * 2400L)) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_Z) << 8;
-		if (c_limit_calc > c_limit)
-			c_limit = c_limit_calc;
-		// check E axis
-		c_limit_calc = ( (dda->e_delta * (UM_PER_STEP_E * 2400L)) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_E) << 8;
 		if (c_limit_calc > c_limit)
 			c_limit = c_limit_calc;
 
@@ -291,15 +275,12 @@ void dda_create(DDA *dda, TARGET *target) {
 			dda->x_counter = dda->x_step_interval = move_duration / dda->x_delta;
 			dda->y_counter = dda->y_step_interval = move_duration / dda->y_delta;
 			dda->z_counter = dda->z_step_interval = move_duration / dda->z_delta;
-			dda->e_counter = dda->e_step_interval = move_duration / dda->e_delta;
 
 			dda->c = dda->x_step_interval;
 			if (dda->y_step_interval < dda->c)
 				dda->c = dda->y_step_interval;
 			if (dda->z_step_interval < dda->c)
 				dda->c = dda->z_step_interval;
-			if (dda->e_step_interval < dda->c)
-				dda->c = dda->e_step_interval;
 
 			dda->c <<= 8;
 		#else
@@ -315,7 +296,6 @@ void dda_create(DDA *dda, TARGET *target) {
 	// next dda starts where we finish
 	memcpy(&startpoint, target, sizeof(TARGET));
 	// E is always relative, reset it here
-	startpoint.E = 0;
 }
 
 /*
@@ -348,12 +328,7 @@ void dda_start(DDA *dda) {
 		x_direction(dda->x_direction);
 		y_direction(dda->y_direction);
 		z_direction(dda->z_direction);
-		e_direction(dda->e_direction);
 
-		#ifdef	DC_EXTRUDER
-		if (dda->e_delta)
-			heater_set(DC_EXTRUDER, DC_EXTRUDER_PWM);
-		#endif
 
 // 		}
 
@@ -410,18 +385,7 @@ void dda_step(DDA *dda) {
 			dda->z_counter += dda->z_step_interval;
 			dda->z_delta--;
 		}
-		if (dda->e_counter <= 0) {
-			if ((current_position.E != dda->endpoint.E) /* &&
-				(e_max() != dda->e_direction) && (e_min() == dda->e_direction) */) {
-				e_step();
-			if (dda->e_direction)
-				current_position.E++;
-			else
-				current_position.E--;
-			}
-			dda->e_counter += dda->e_step_interval;
-			dda->e_delta--;
-		}
+		
 	#else
 		if ((current_position.X != dda->endpoint.X) /* &&
 				(x_max() != dda->x_direction) && (x_min() == dda->x_direction) */) {
@@ -465,20 +429,6 @@ void dda_step(DDA *dda) {
 					current_position.Z--;
 
 				dda->z_counter += dda->total_steps;
-			}
-		}
-
-		if (current_position.E != dda->endpoint.E) {
-			dda->e_counter -= dda->e_delta;
-			if (dda->e_counter < 0) {
-				e_step();
-				did_step = 1;
-				if (dda->e_direction)
-					current_position.E++;
-				else
-					current_position.E--;
-
-				dda->e_counter += dda->total_steps;
 			}
 		}
 	#endif
@@ -542,8 +492,6 @@ void dda_step(DDA *dda) {
 			dda->c = dda->y_counter;
 		if (dda->z_counter < dda->c)
 			dda->c = dda->z_counter;
-		if (dda->e_counter < dda->c)
-			dda->c = dda->e_counter;
 
 		if (dda->x_delta)
 			dda->x_counter -= dda->c;
@@ -551,13 +499,10 @@ void dda_step(DDA *dda) {
 			dda->y_counter -= dda->c;
 		if (dda->z_delta)
 			dda->z_counter -= dda->c;
-		if (dda->e_delta)
-			dda->e_counter -= dda->c;
 		if (
 			(dda->x_delta > 0) ||
 			(dda->y_delta > 0) ||
-			(dda->z_delta > 0) ||
-			(dda->e_delta > 0))
+			(dda->z_delta > 0)
 			did_step = 1;
 
 		dda->c <<= 8;
@@ -572,14 +517,9 @@ void dda_step(DDA *dda) {
 	}
 	else {
 		dda->live = 0;
-		// reset E- always relative
-		current_position.E = 0;
 		// linear acceleration code doesn't alter F during a move, so we must update it here
 		// in theory, we *could* update F every step, but that would require a divide in interrupt context which should be avoided if at all possible
 		current_position.F = dda->endpoint.F;
-		#ifdef	DC_EXTRUDER
-			heater_set(DC_EXTRUDER, 0);
-		#endif
 	}
 	
 	setTimer(dda->c >> 8);

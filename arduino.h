@@ -41,21 +41,12 @@
 
 /*
 	ports and functions
-
 	added as necessary or if I feel like it- not a comprehensive list!
 */
-
-#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega328__) || defined (__AVR_ATmega328P__)
-	#include	"arduino_168_328p.h"
-#endif	/*	_AVR_ATmega{168,328,328P}__ */
 
 #if defined (__AVR_ATmega644__) || defined (__AVR_ATmega644P__) || defined (__AVR_ATmega644PA__)
 	#include	"arduino_644.h"
 #endif	/*	_AVR_ATmega{644,644P,644PA}__ */
-
-#if defined (__AVR_ATmega1280__)
-	#include	"arduino_1280.h"
-#endif	/* __AVR_ATmega1280__ */
 
 #ifndef	DIO0_PIN
 #error pins for this chip not defined in arduino.h! If you write an appropriate pin definition and have this firmware work on your chip, please tell us via the forum thread

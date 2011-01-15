@@ -7,7 +7,6 @@
 #include	"timer.h"
 #include	"serial.h"
 #include	"sermsg.h"
-#include	"temp.h"
 #include	"delay.h"
 #include	"sersendf.h"
 #include	"clock.h"

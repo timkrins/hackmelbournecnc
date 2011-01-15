@@ -39,7 +39,6 @@ typedef struct {
 			uint8_t					seen_X	:1;
 			uint8_t					seen_Y	:1;
 			uint8_t					seen_Z	:1;
-			uint8_t					seen_E	:1;
 			uint8_t					seen_F	:1;
 			uint8_t					seen_S	:1;
 

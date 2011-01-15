@@ -1,23 +1,5 @@
 #ifdef FUSES
-	#if defined (__AVR_ATmega168__)
-	FUSES = {
-		.low = FUSE_CKSEL3 & FUSE_SUT0,
-		.high = FUSE_SPIEN,
-		.extended = FUSE_BOOTSZ1 & FUSE_BOOTSZ0,
-	};
-	#elif defined (__AVR_ATmega328P__)
-	FUSES = {
-		.low = FUSE_CKSEL3 & FUSE_SUT0,
-		.high = FUSE_SPIEN & FUSE_BOOTSZ0 & FUSE_BOOTSZ1,
-		.extended = EFUSE_DEFAULT,
-	};
-	#elif defined (__AVR_ATmega644__) || defined (__AVR_ATmega644P__)
-	FUSES = {
-		.low = FUSE_CKSEL3 & FUSE_SUT0,
-		.high = FUSE_SPIEN & FUSE_BOOTSZ0 & FUSE_BOOTSZ1,
-		.extended = EFUSE_DEFAULT,
-	};
-	#elif defined (__AVR_ATmega1280__)
+	#if defined (__AVR_ATmega644__) || defined (__AVR_ATmega644P__)
 	FUSES = {
 		.low = FUSE_CKSEL3 & FUSE_SUT0,
 		.high = FUSE_SPIEN & FUSE_BOOTSZ0 & FUSE_BOOTSZ1,

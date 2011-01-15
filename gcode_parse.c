@@ -6,7 +6,6 @@
 #include	"sermsg.h"
 #include	"dda_queue.h"
 #include	"debug.h"
-#include	"heater.h"
 #include	"sersendf.h"
 
 #include	"gcode_process.h"
@@ -28,7 +27,6 @@
 #define	STEPS_PER_M_X			((uint32_t) ((STEPS_PER_MM_X * 1000.0) + 0.5))
 #define	STEPS_PER_M_Y			((uint32_t) ((STEPS_PER_MM_Y * 1000.0) + 0.5))
 #define	STEPS_PER_M_Z			((uint32_t) ((STEPS_PER_MM_Z * 1000.0) + 0.5))
-#define	STEPS_PER_M_E			((uint32_t) ((STEPS_PER_MM_E * 1000.0) + 0.5))
 
 /*
 	mm -> inch conversion
@@ -37,7 +35,6 @@
 #define	STEPS_PER_IN_X		((uint32_t) ((25.4 * STEPS_PER_MM_X) + 0.5))
 #define	STEPS_PER_IN_Y		((uint32_t) ((25.4 * STEPS_PER_MM_Y) + 0.5))
 #define	STEPS_PER_IN_Z		((uint32_t) ((25.4 * STEPS_PER_MM_Z) + 0.5))
-#define	STEPS_PER_IN_E		((uint32_t) ((25.4 * STEPS_PER_MM_E) + 0.5))
 
 uint8_t last_field = 0;
 
@@ -78,11 +75,9 @@ static int32_t decfloat_to_int(decfloat *df, int32_t multiplicand, uint32_t deno
 	return df->sign ? -r : r;
 }
 
-/****************************************************************************
-*                                                                           *
+/***************************************************************************\
 * Character Received - add it to our command                                *
-*                                                                           *
-****************************************************************************/
+\***************************************************************************/
 
 void gcode_parse_char(uint8_t c) {
 	#ifdef ASTERISK_IN_CHECKSUM_INCLUDED
@@ -133,14 +128,6 @@ void gcode_parse_char(uint8_t c) {
 						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_M_Z, 1000);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.Z);
-					break;
-				case 'E':
-					if (next_target.option_inches)
-						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_IN_E, 1);
-					else
-						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_M_E, 1000);
-					if (debug_flags & DEBUG_ECHO)
-						serwrite_uint32(next_target.target.E);
 					break;
 				case 'F':
 					// just use raw integer, we need move distance and n_steps to convert it to a useful value, so wait until we have those to convert it
@@ -227,9 +214,6 @@ void gcode_parse_char(uint8_t c) {
 				break;
 			case 'Z':
 				next_target.seen_Z = 1;
-				break;
-			case 'E':
-				next_target.seen_E = 1;
 				break;
 			case 'F':
 				next_target.seen_F = 1;
@@ -347,7 +331,7 @@ void gcode_parse_char(uint8_t c) {
 
 		// reset variables
 		next_target.seen_X = next_target.seen_Y = next_target.seen_Z = \
-			next_target.seen_E = next_target.seen_F = next_target.seen_S = \
+			next_target.seen_F = next_target.seen_S = \
 			next_target.seen_P = next_target.seen_T = next_target.seen_N = \
 			next_target.seen_M = next_target.seen_checksum = next_target.seen_semi_comment = \
 			next_target.seen_parens_comment = next_target.checksum_read = \
@@ -361,17 +345,13 @@ void gcode_parse_char(uint8_t c) {
 
 		if (next_target.option_relative) {
 			next_target.target.X = next_target.target.Y = next_target.target.Z = 0;
-			next_target.target.E = 0;
 		}
 	}
 }
 
 /***************************************************************************\
-*                                                                           *
 * Request a resend of the current line - used from various places.          *
-*                                                                           *
 * Relies on the global variable next_target.N being valid.                  *
-*                                                                           *
 \***************************************************************************/
 
 void request_resend(void) {
