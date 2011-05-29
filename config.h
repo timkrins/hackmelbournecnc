@@ -35,6 +35,10 @@
 #define STEPPERS_ENABLE_PORT    PORTC
 #define STEPPERS_ENABLE_BIT         3 //PC3
 
+#define STEPPERS_RESET_DDR     DDRC
+#define STEPPERS_RESET_PORT    PORTC
+#define STEPPERS_RESET_BIT         4 //PC4
+
 #define STEPPING_DDR       DDRC
 #define STEPPING_PORT      PORTC
 #define X_STEP_BIT           5 //PC5
@@ -44,11 +48,14 @@
 #define Y_DIRECTION_BIT      1 //PC1
 #define Z_DIRECTION_BIT      0 //PC0
 
-#define LIMIT_DDR      DDRA
-#define LIMIT_PORT     PORTA
-#define X_LIMIT_BIT          1
-#define Y_LIMIT_BIT          2
-#define Z_LIMIT_BIT          3
+//as a default it goes 11000000.
+//when X is going down, 11100000.
+
+//#define LIMIT_DDR      DDRA
+//#define LIMIT_PORT     PORTA
+//#define X_LIMIT_BIT          1
+//#define Y_LIMIT_BIT          2
+//#define Z_LIMIT_BIT          3
 
 #define SPINDLE_ENABLE_DDR DDRB
 #define SPINDLE_ENABLE_PORT PORTB

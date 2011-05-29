@@ -37,7 +37,7 @@
 #define STEP_MASK ((1<<X_STEP_BIT)|(1<<Y_STEP_BIT)|(1<<Z_STEP_BIT)) // All step bits
 #define DIRECTION_MASK ((1<<X_DIRECTION_BIT)|(1<<Y_DIRECTION_BIT)|(1<<Z_DIRECTION_BIT)) // All direction bits
 #define STEPPING_MASK (STEP_MASK | DIRECTION_MASK) // All stepping-related bits (step/direction)
-#define LIMIT_MASK ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)|(1<<Z_LIMIT_BIT)) // All limit bits
+//#define LIMIT_MASK ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)|(1<<Z_LIMIT_BIT)) // All limit bits
 
 #define TICKS_PER_MICROSECOND (F_CPU/1000000)
 #define CYCLES_PER_ACCELERATION_TICK ((TICKS_PER_MICROSECOND*1000000)/ACCELERATION_TICKS_PER_SECOND)
@@ -212,8 +212,9 @@ void st_init()
 	// Configure directions of interface pins
   STEPPING_DDR |= STEPPING_MASK;
   STEPPING_PORT = (STEPPING_PORT & ~STEPPING_MASK) | settings.invert_mask;
-  LIMIT_DDR &= ~(LIMIT_MASK);
+  //LIMIT_DDR &= ~(LIMIT_MASK);
   STEPPERS_ENABLE_DDR |= 1<<STEPPERS_ENABLE_BIT;
+  STEPPERS_RESET_DDR |= 1<<STEPPERS_RESET_BIT;
   
 	// waveform generation = 0100 = CTC
 	TCCR1B &= ~(1<<WGM13);
@@ -236,6 +237,8 @@ void st_init()
   
   // set enable pin     
   //STEPPERS_ENABLE_PORT |= 1<<STEPPERS_ENABLE_BIT;
+  STEPPERS_ENABLE_PORT |= 0<<STEPPERS_ENABLE_BIT;
+  STEPPERS_RESET_PORT |= 1<<STEPPERS_RESET_BIT;
       
   sei();  
 }

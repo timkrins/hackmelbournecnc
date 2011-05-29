@@ -54,7 +54,13 @@ void settings_reset() {
 }
 
 void settings_dump() {
-  printPgmString(PSTR("$0 = ")); printFloat(settings.steps_per_mm[X_AXIS]);
+  printPgmString(PSTR("PortC")); printInteger(PORTC);
+   // printPgmString(PSTR("\r\nPortA")); printInteger(PORTA);
+   //   printPgmString(PSTR("\r\nPortB")); printInteger(PORTB);
+        printPgmString(PSTR("\r\nddrC")); printInteger(DDRC);
+   // printPgmString(PSTR("\r\nddrA")); printInteger(DDRA);
+ //     printPgmString(PSTR("\r\nddrB")); printInteger(DDRB);
+  printPgmString(PSTR("\r\n$0 = ")); printFloat(settings.steps_per_mm[X_AXIS]);
   printPgmString(PSTR(" (steps/mm x)\r\n$1 = ")); printFloat(settings.steps_per_mm[Y_AXIS]);
   printPgmString(PSTR(" (steps/mm y)\r\n$2 = ")); printFloat(settings.steps_per_mm[Z_AXIS]);
   printPgmString(PSTR(" (steps/mm z)\r\n$3 = ")); printInteger(settings.pulse_microseconds);

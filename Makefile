@@ -57,6 +57,7 @@ all:	grbl.hex
 
 flash: grbl.hex
 	$(AVRDUDE) -cusbtiny -p$(DEVICE) -V -U flash:w:$^
+	rm -f grbl.hex main.elf $(OBJECTS)
 
 fuse:
 	$(AVRDUDE) $(FUSES)
