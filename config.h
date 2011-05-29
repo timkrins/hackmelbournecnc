@@ -18,6 +18,21 @@
   along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+Specifics for the CCHS CNC machine:
+
+The X and Y axes:
+Steppers have a 1.8degree step: 200 steps per revolution.
+The lead of the screw: 0.125inches = 3.175mm.
+3.175 is one turn.
+So, turns_per_mm = 1/3.175 = 0.3149606299212598.
+steps_per_mm = (steps_per_revolution*microsteps)/turns_per_mm
+             = (200*1)/0.3149606299212598.
+             = 635, very close to exact.
+             
+The Z axis: 
+*/
+
 #ifndef config_h
 #define config_h
 
