@@ -31,6 +31,7 @@
 #include "settings.h"
 #include "wiring_serial.h"
 #include "config.h"
+#include "lcd.c"
 #include <math.h>
 #include <avr/pgmspace.h>
 
@@ -45,6 +46,7 @@ int main(void)
   plan_init();
   st_init(); 
   //spindle_init();   
+  lcd_cnc_init();
   gc_init();  
   
   for(;;){
