@@ -26,6 +26,7 @@
 #include <string.h>
 #include "nuts_bolts.h"
 #include <math.h>
+#include <stdio.h>
 #include "settings.h"
 #include "motion_control.h"
 #include "spindle_control.h"
@@ -251,7 +252,7 @@ uint8_t gc_execute_line(char *line) {
   } else {
     spindle_stop();
   }
-  
+  char print1[50];
   // Perform any physical actions
   switch (next_action) {
     case NEXT_ACTION_GO_HOME: mc_go_home(); break;
@@ -261,10 +262,12 @@ uint8_t gc_execute_line(char *line) {
       case MOTION_MODE_CANCEL: break;
       case MOTION_MODE_SEEK:
       mc_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], gc.seek_rate, FALSE);
+      sprintf(print1, "SEK X%f.3, Y%f.3, Z%f.3",(double)target[X_AXIS],(double)target[Y_AXIS],(double)target[Z_AXIS]); 
       break;
       case MOTION_MODE_LINEAR:
       mc_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], 
         (gc.inverse_feed_rate_mode) ? inverse_feed_rate : gc.feed_rate, gc.inverse_feed_rate_mode);
+      sprintf(print1, "LNR X%f.3, Y%f.3, Z%f.3",(double)target[X_AXIS],(double)target[Y_AXIS],(double)target[Z_AXIS]); 
       break;
 #ifdef __AVR_ATmega328P__
       case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC:

@@ -51,10 +51,7 @@ typedef struct {
   uint32_t decelerate_after;          // The index of the step event on which to start decelerating
   
 } block_t;
-      
 
-// The current position of the tool in absolute steps
-static int32_t position[3];   
 
 // Initialize the motion plan subsystem      
 void plan_init();

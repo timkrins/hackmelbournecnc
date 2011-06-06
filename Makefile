@@ -30,7 +30,7 @@
 DEVICE     = atmega644p
 CLOCK      = 20000000L
 PROGRAMMER = -cusbtiny -P usb
-OBJECTS    = main.o motion_control.o gcode.o wiring_serial.o serial_protocol.o stepper.o \
+OBJECTS    = main.o motion_control.o gcode.o wiring_serial.o serial_protocol.o spindle_control.o stepper.o \
              eeprom.o settings.o planner.o lcd.o
 
 

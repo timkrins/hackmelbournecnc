@@ -102,7 +102,7 @@ void lcd_write_line(char *s) {
   lcd_write(*s);                // write it to the LCD
   s++;                          // and go to the next character
   } else {
-  lcd_write(" ");
+  lcd_write(0x20);
   }
   }
 }
