@@ -23,7 +23,7 @@
 #include <util/delay.h>
 #include "planner.h"
 #include "stepper.h"
-#include "spindle_control.h"
+//#include "spindle_control.h"
 #include "motion_control.h"
 #include "gcode.h"
 #include "serial_protocol.h"
@@ -41,6 +41,7 @@
 
 int main(void)
 {
+char print1[50];
   sp_init();      
   settings_init();  
   plan_init();
@@ -52,6 +53,11 @@ int main(void)
   for(;;){
     sleep_mode(); // Wait for it ...
     sp_process(); // ... process the serial protocol
+    
+    /* Not sure if this will work, but trying anyway */
+    sprintf(print1, "X%f.3, Y%f.3, Z%f.3",(double)position[X_AXIS],(double)position[Y_AXIS],(double)position[Z_AXIS]); 
+    lcd_set_line(2);                        // sets the screen position, line 3
+    lcd_write_line(print1);
   }
   return 0;   /* never reached */
 }

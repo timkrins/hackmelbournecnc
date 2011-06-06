@@ -52,6 +52,10 @@ typedef struct {
   
 } block_t;
       
+
+// The current position of the tool in absolute steps
+static int32_t position[3];   
+
 // Initialize the motion plan subsystem      
 void plan_init();
 

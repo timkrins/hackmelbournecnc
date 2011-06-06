@@ -1,41 +1,32 @@
-/////////////////////////////////
-// LCD Module Interface        //
-// for your average 2 line LCD //
-// By Tim K                    //
-/////////////////////////////////
+/*
+lcd.c
+HackMelbourne CNC 4line display interface.
+Define the settings in config.h
+*/
 
 #include <avr/io.h>                        // include input and output functions
 #include <util/delay.h>                    // include functions for accurate delays
 #include <stdio.h>
 
-#define LCD_PORT PORTA                     // customised to our hardware. should be moved to config.h
-#define LCD_RS_BIT 0                       // customised to our hardware. should be moved to config.h
-#define LCD_RW_BIT 6                       // customised to our hardware. should be moved to config.h
-#define LCD_E_BIT 1                        // customised to our hardware. should be moved to config.h
-#define LCD_DATAMASK 0b00111100            // customised to our hardware. should be moved to config.h
-#define LCD_CONTROLS ~LCD_DATAMASK
-
-#define RS0  LCD_PORT &= ~(1<<LCD_RS_BIT)             // Register select line low, select the control register
-#define RS1  LCD_PORT |=  (1<<LCD_RS_BIT)             // Register select line high, select the data register
-#define RW0  LCD_PORT &= ~(1<<LCD_RW_BIT)             // Write mode
-#define RW1  LCD_PORT |=  (1<<LCD_RW_BIT)             // Read mode
-#define E0   LCD_PORT &= ~(1<<LCD_E_BIT)              // Stop data write
-#define E1   LCD_PORT |=  (1<<LCD_E_BIT)              // Start data write
-
+#include "config.h"
+#include "lcd.h"
 
 void lcd_set_controls_4bit(char controlvar) {                // wait for LCD to be ready
   char NIB1;
   char NIB2;
+  char NIBBLE;
   NIB1 = ((controlvar&0b11110000)>>4);                          // set the first nibble
   NIB2 = (controlvar&0b00001111);                               // set the second nibble
   RW0;                                                          // enable writing mode
   RS0;                                                          // enable control register
-  LCD_PORT = (LCD_PORT&LCD_CONTROLS)|((NIB1<<2)&LCD_DATAMASK);  // set the first nibble bits
+  NIBBLE = NIB1; 						// set nibble to the first one
+  LCD_PORT = LCD_NIBBLE;  					// set the bits
   E1;                                                           // write data to LCD
   _delay_us(1);                                                 // delay for signal
   E0;                                                           // stop data write
   _delay_ms(20);                                                // delay for signal
-  LCD_PORT = (LCD_PORT&LCD_CONTROLS)|((NIB2<<2)&LCD_DATAMASK);  // set the second nibble bits
+  NIBBLE = NIB2; 						// set nibble to the second one
+  LCD_PORT = LCD_NIBBLE;  					// set the bits
   E1;                                                           // write data to LCD
   _delay_us(1);                                                 // delay for signal
   E0;                                                           // stop data write
@@ -44,9 +35,11 @@ void lcd_set_controls_4bit(char controlvar) {                // wait for LCD to 
 }
 
 void lcd_set_controls_8bit(char controlvar) {                      // wait for LCD to be ready
+  char NIBBLE;
   RW0;                                                                // enable writing mode
   RS0;                                                                // enable control register
-  LCD_PORT = (LCD_PORT&LCD_CONTROLS)|((controlvar<<2)&LCD_DATAMASK);  // set the bits
+  NIBBLE = controlvar;
+  LCD_PORT = LCD_NIBBLE;  // set the bits
   E1;                                                                 // write data to LCD
   _delay_us(1);                                                       // delay for signal
   E0;                                                                 // stop data write
@@ -70,33 +63,32 @@ void lcd_clear_display(void) {
 }
 
 void lcd_set_line(char x) {
-  switch (x) {
+  switch (x) {// sets the position of the DDRAM input
     case 0:
-            lcd_set_controls_4bit((1<<7)|0x00);    // sets the position of the DDRAM input
-            break;
+            lcd_set_controls_4bit((1<<7)|0x00); break;
     case 1:
-            lcd_set_controls_4bit((1<<7)|0x40);    // sets the position of the DDRAM input
-            break;
+            lcd_set_controls_4bit((1<<7)|0x40); break;
     case 2:
-            lcd_set_controls_4bit((1<<7)|0x14);    // sets the position of the DDRAM input
-            break;
+            lcd_set_controls_4bit((1<<7)|0x14); break;
     case 3:
-            lcd_set_controls_4bit((1<<7)|0x54);    // sets the position of the DDRAM input
-            break;
+            lcd_set_controls_4bit((1<<7)|0x54); break;
   }
 }
 
 void lcd_write(char writeval) {
-    char NIB1;
-    char NIB2;
+  char NIB1;
+  char NIB2;
+  char NIBBLE;
     NIB1 = (writeval&0b11110000) >> 4;
     NIB2 = (writeval&0b00001111);
-    LCD_PORT = (LCD_PORT&LCD_CONTROLS)|((NIB1<<2)&LCD_DATAMASK);  // set the bits
+  NIBBLE = NIB1; 						// set nibble to the first one
+  LCD_PORT = LCD_NIBBLE;  					// set the bits
     E1;                                                       // write data to LCD
     _delay_us(1);                                             // delay for signal
     E0;                                                       // stop writing data
     _delay_ms(3);
-    LCD_PORT = (LCD_PORT&LCD_CONTROLS)|((NIB2<<2)&LCD_DATAMASK);  // set the bits
+  NIBBLE = NIB2; 						// set nibble to the first one
+  LCD_PORT = LCD_NIBBLE;  					// set the bits
     E1;                                                       // write data to LCD
     _delay_us(1);                                             // delay for signal
     E0;                                                       // stop writing data
@@ -109,12 +101,14 @@ void lcd_write_line(char *s) {
   if(*s) {                      // if there is a character
   lcd_write(*s);                // write it to the LCD
   s++;                          // and go to the next character
+  } else {
+  lcd_write(" ");
   }
   }
 }
 
 void lcd_cnc_init(void) {
-    DDRA  = 0xFF;
+    LCD_DDR  = 0xFF;
     lcd_clear_display();                    // clear and initialise the LCD
     lcd_set_home();                         // sets the lcd home
     lcd_set_line(0);                        // sets the screen position, line 1

@@ -48,40 +48,46 @@ The Z axis:
 
 #define STEPPERS_ENABLE_DDR     DDRC
 #define STEPPERS_ENABLE_PORT    PORTC
-#define STEPPERS_ENABLE_BIT         3 //PC3
+#define STEPPERS_ENABLE_BIT     3 //PC3
 
-#define STEPPERS_RESET_DDR     DDRC
-#define STEPPERS_RESET_PORT    PORTC
-#define STEPPERS_RESET_BIT         4 //PC4
+#define STEPPERS_RESET_DDR     	DDRC
+#define STEPPERS_RESET_PORT    	PORTC
+#define STEPPERS_RESET_BIT      4 //PC4
 
-#define STEPPING_DDR       DDRC
-#define STEPPING_PORT      PORTC
-#define X_STEP_BIT           5 //PC5
-#define Y_STEP_BIT           6 //PC6
-#define Z_STEP_BIT           7 //PC7
-#define X_DIRECTION_BIT      2 //PC2
-#define Y_DIRECTION_BIT      1 //PC1
-#define Z_DIRECTION_BIT      0 //PC0
+#define STEPPING_DDR       	DDRC
+#define STEPPING_PORT      	PORTC
+#define X_STEP_BIT           	5 //PC5
+#define Y_STEP_BIT           	6 //PC6
+#define Z_STEP_BIT           	7 //PC7
+#define X_DIRECTION_BIT      	2 //PC2
+#define Y_DIRECTION_BIT      	1 //PC1
+#define Z_DIRECTION_BIT      	0 //PC0
 
-//as a default it goes 11000000.
-//when X is going down, 11100000.
+#define LIMIT_DDR      		DDRB
+#define LIMIT_PORT     		PORTB
+#define XPOS_LIMIT_BIT          0
+#define XNEG_LIMIT_BIT          1
+#define YPOS_LIMIT_BIT          2
+#define YNEG_LIMIT_BIT          3
+#define ZPOS_LIMIT_BIT          4
+#define ZNEG_LIMIT_BIT          5
 
-//#define LIMIT_DDR      DDRA
-//#define LIMIT_PORT     PORTA
-//#define X_LIMIT_BIT          1
-//#define Y_LIMIT_BIT          2
-//#define Z_LIMIT_BIT          3
+#define SPINDLE_ENABLE_DDR 	DDRB
+#define SPINDLE_ENABLE_PORT 	PORTB
+#define SPINDLE_ENABLE_BIT 	4
 
-#define SPINDLE_ENABLE_DDR DDRB
-#define SPINDLE_ENABLE_PORT PORTB
-#define SPINDLE_ENABLE_BIT 4
+#define LCD_DDR			DDRA
+#define LCD_PORT 		PORTA
+#define LCD_RS_BIT 		0
+#define LCD_RW_BIT 		6
+#define LCD_E_BIT 		1
+#define LCD_DATA_BIT_1		2
+#define LCD_DATA_BIT_2		3
+#define LCD_DATA_BIT_3		4
+#define LCD_DATA_BIT_4		5
 
-#define SPINDLE_DIRECTION_DDR DDRB
-#define SPINDLE_DIRECTION_PORT PORTB
-#define SPINDLE_DIRECTION_BIT 5
-
-// The temporal resolution of the acceleration management subsystem. Higher number
-// give smoother acceleration but may impact performance
+// The temporal resolution of the acceleration management subsystem. 
+// Higher numbers give smoother acceleration but may impact performance.
 #define ACCELERATION_TICKS_PER_SECOND 40L
 
 #endif
