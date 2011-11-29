@@ -26,10 +26,13 @@
 #include <string.h>
 #include "nuts_bolts.h"
 #include <math.h>
+#include <stdio.h>
 #include "settings.h"
 #include "motion_control.h"
 #include "spindle_control.h"
 #include "errno.h"
+#include "lcd.h"
+#include "planner.h"
 #include "serial_protocol.h"
 
 #define MM_PER_INCH (25.4)
@@ -59,10 +62,12 @@ typedef struct {
   uint8_t status_code;
 
   uint8_t motion_mode;             /* {G0, G1, G2, G3, G80} */
+  uint8_t prev_motion;
   uint8_t inverse_feed_rate_mode;  /* G93, G94 */
   uint8_t inches_mode;             /* 0 = millimeter mode, 1 = inches mode {G20, G21} */
   uint8_t absolute_mode;           /* 0 = relative motion, 1 = absolute motion {G90, G91} */
   uint8_t program_flow;
+  int resetaxes;
   int spindle_direction;
   double feed_rate, seek_rate;     /* Millimeters/second */
   double position[3];              /* Where the interpreter considers the tool to be at this point in the code */
@@ -82,6 +87,8 @@ int read_double(char *line,               //  <- string: line of RS274/NGC code 
 
 int next_statement(char *letter, double *double_ptr, char *line, int *char_counter);
 
+char bufferz[20];
+int n;
 
 void select_plane(uint8_t axis_0, uint8_t axis_1, uint8_t axis_2) 
 {
@@ -94,6 +101,7 @@ void gc_init() {
   memset(&gc, 0, sizeof(gc));
   gc.feed_rate = settings.default_feed_rate/60;
   gc.seek_rate = settings.default_seek_rate/60;
+  gc.prev_motion = MOTION_MODE_CANCEL;
   select_plane(X_AXIS, Y_AXIS, Z_AXIS);
   gc.absolute_mode = TRUE;
 }
@@ -166,48 +174,51 @@ uint8_t gc_execute_line(char *line) {
     int_value = trunc(value);
     switch(letter) {
       case 'G':
+      lcd_clear();
       switch(int_value) {
-        case 0: gc.motion_mode = MOTION_MODE_SEEK; break;
-        case 1: gc.motion_mode = MOTION_MODE_LINEAR; break;
+        case 0: gc.motion_mode = MOTION_MODE_SEEK; lcd_write_line(0, "> FastMove"); break;
+        case 1: gc.motion_mode = MOTION_MODE_LINEAR; lcd_write_line(0, "> LinearMove"); break;
 #ifdef __AVR_ATmega328P__        
-        case 2: gc.motion_mode = MOTION_MODE_CW_ARC; break;
-        case 3: gc.motion_mode = MOTION_MODE_CCW_ARC; break;
+        case 2: gc.motion_mode = MOTION_MODE_CW_ARC; lcd_write_line(0, "> CWArc"); break;
+        case 3: gc.motion_mode = MOTION_MODE_CCW_ARC; lcd_write_line(0, "> CCWArc"); break;
 #endif        
-        case 4: next_action = NEXT_ACTION_DWELL; break;
-        case 17: select_plane(X_AXIS, Y_AXIS, Z_AXIS); break;
-        case 18: select_plane(X_AXIS, Z_AXIS, Y_AXIS); break;
-        case 19: select_plane(Y_AXIS, Z_AXIS, X_AXIS); break;
-        case 20: gc.inches_mode = TRUE; break;
-        case 21: gc.inches_mode = FALSE; break;
-        case 28: case 30: next_action = NEXT_ACTION_GO_HOME; break;
-        case 53: absolute_override = TRUE; break;
-        case 80: gc.motion_mode = MOTION_MODE_CANCEL; break;
-        case 90: gc.absolute_mode = TRUE; break;
-        case 91: gc.absolute_mode = FALSE; break;
-        case 93: gc.inverse_feed_rate_mode = TRUE; break;
-        case 94: gc.inverse_feed_rate_mode = FALSE; break;
-        default: FAIL(GCSTATUS_UNSUPPORTED_STATEMENT);
+        case 4: next_action = NEXT_ACTION_DWELL; lcd_write_line(0, "> Dwell"); break;
+        case 17: select_plane(X_AXIS, Y_AXIS, Z_AXIS); lcd_write_line(0, "> SelectPlane1"); break;
+        case 18: select_plane(X_AXIS, Z_AXIS, Y_AXIS); lcd_write_line(0, "> SelectPlane2"); break;
+        case 19: select_plane(Y_AXIS, Z_AXIS, X_AXIS); lcd_write_line(0, "> SelectPlane3"); break;
+        case 20: gc.inches_mode = TRUE;  lcd_write_line(0, "> InchesMode"); break;
+        case 21: gc.inches_mode = FALSE;  lcd_write_line(0, "> mmMode"); break;
+        case 28: case 30: next_action = NEXT_ACTION_GO_HOME;  lcd_write_line(0, "> Home"); break;
+        case 53: absolute_override = TRUE;   lcd_write_line(0, "> Absolute");break;
+        case 80: gc.motion_mode = MOTION_MODE_CANCEL;   lcd_write_line(0, "> MotionMode");break;
+        case 90: gc.absolute_mode = TRUE;  lcd_write_line(0, "> AbsoluteMode");break;
+        case 91: gc.absolute_mode = FALSE;   lcd_write_line(0, "> RelativeMode");break;
+        case 93: gc.inverse_feed_rate_mode = TRUE;   lcd_write_line(0, "> inverseFeed");break;
+        case 94: gc.inverse_feed_rate_mode = FALSE;   lcd_write_line(0, "> normFeed");break;
+        default: FAIL(GCSTATUS_UNSUPPORTED_STATEMENT); lcd_write_line(0, "> Unknown Code");
       }
       break;
       
       case 'M':
+      lcd_clear();
       switch(int_value) {
-        case 0: case 1: gc.program_flow = PROGRAM_FLOW_PAUSED; break;
-        case 2: case 30: case 60: gc.program_flow = PROGRAM_FLOW_COMPLETED; break;
-        case 3: gc.spindle_direction = 1; break;
-        case 4: gc.spindle_direction = -1; break;
-        case 5: gc.spindle_direction = 0; break;
-        default: FAIL(GCSTATUS_UNSUPPORTED_STATEMENT);
+        case 0: case 1: gc.program_flow = PROGRAM_FLOW_PAUSED;   lcd_write_line(0, "> Pause");break;
+        case 2: case 30: case 60: gc.program_flow = PROGRAM_FLOW_COMPLETED;   lcd_write_line(0, "> Finished");break;
+        case 3: gc.spindle_direction = 1;  lcd_write_line(0, "> SpindleOn"); break;
+        case 4: gc.spindle_direction = -1;  lcd_write_line(0, "> SpindleRev"); break;
+        case 5: gc.spindle_direction = 0;  lcd_write_line(0, "> SpindleOff");  break; // this will turn off the spindle
+        case 99: gc.resetaxes = 1;  lcd_write_line(0, "> Zeroed"); break; // this will reset all axes to zero.
+        default: FAIL(GCSTATUS_UNSUPPORTED_STATEMENT);   lcd_write_line(0, "> Unknown Code");
       }            
       break;
-      case 'T': gc.tool = trunc(value); break;
+      case 'T':
+      lcd_clear(); gc.tool = trunc(value);   lcd_write_line(0, "> ToolChange");break;
     }
     if(gc.status_code) { break; }
   }
   
   // If there were any errors parsing this line, we will return right away with the bad news
   if (gc.status_code) { return(gc.status_code); }
-
   char_counter = 0;
   clear_vector(offset);
   memcpy(target, gc.position, sizeof(target)); // i.e. target = gc.position
@@ -252,17 +263,35 @@ uint8_t gc_execute_line(char *line) {
     spindle_stop();
   }
   
+  if (gc.resetaxes) {
+      gc.prev_motion = gc.motion_mode;
+      gc.motion_mode = MOTION_MODE_CANCEL;
+      gc.resetaxes = 0;
+      n = sprintf(bufferz, "Was X%d,Y%d,Z%d", (int)gc.position[X_AXIS], (int)gc.position[Y_AXIS], (int)gc.position[Z_AXIS]);
+      lcd_write_line(2, bufferz);
+      clear_vector(gc.position);//reset to zero
+      clear_vector(target);//reset to zero
+      clear_vector(position);//reset to zero
+      memcpy(position, gc.position, sizeof(gc.position)); // position[] = target[]
+      n = sprintf(bufferz, "Now X%d,Y%d,Z%d", (int)gc.position[X_AXIS], (int)gc.position[Y_AXIS], (int)gc.position[Z_AXIS]);
+      lcd_write_line(3, bufferz);
+      }
+  
   // Perform any physical actions
   switch (next_action) {
     case NEXT_ACTION_GO_HOME: mc_go_home(); break;
     case NEXT_ACTION_DWELL: mc_dwell(trunc(p*1000)); break;
     case NEXT_ACTION_DEFAULT: 
     switch (gc.motion_mode) {
-      case MOTION_MODE_CANCEL: break;
+      case MOTION_MODE_CANCEL: gc.motion_mode = gc.prev_motion; break;
       case MOTION_MODE_SEEK:
+      n = sprintf(bufferz, "G00 X%d,Y%d,Z%d", (int)target[X_AXIS], (int)target[Y_AXIS], (int)target[Z_AXIS]);
+      lcd_write_line(1, bufferz);
       mc_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], gc.seek_rate, FALSE);
       break;
       case MOTION_MODE_LINEAR:
+      n = sprintf(bufferz, "G01 X%d,Y%d,Z%d", (int)target[X_AXIS], (int)target[Y_AXIS], (int)target[Z_AXIS]);
+      lcd_write_line(1, bufferz);
       mc_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], 
         (gc.inverse_feed_rate_mode) ? inverse_feed_rate : gc.feed_rate, gc.inverse_feed_rate_mode);
       break;

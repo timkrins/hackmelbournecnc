@@ -31,7 +31,7 @@
 #include "settings.h"
 #include "wiring_serial.h"
 #include "config.h"
-#include "lcd.c"
+#include "lcd.h"
 #include <math.h>
 #include <avr/pgmspace.h>
 
@@ -41,6 +41,8 @@
 
 int main(void)
 {
+
+_delay_ms(500);
   sp_init();      
   settings_init();  
   plan_init();

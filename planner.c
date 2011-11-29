@@ -75,7 +75,7 @@ static volatile int block_buffer_head;           // Index of the next block to b
 static volatile int block_buffer_tail;           // Index of the block to process now
 
 // The current position of the tool in absolute steps
-static int32_t position[3];   
+//move to main... static int32_t position[3];   
 
 static uint8_t acceleration_manager_enabled;   // Acceleration management active?
 
